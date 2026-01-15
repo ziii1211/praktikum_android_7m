@@ -9,11 +9,9 @@ class QuizQuestion {
   final String text;
   final List<String> answers;
 
-  List<String> getShuffledAnswers() {
-    // Membuat salinan list agar list asli tidak teracak
-    final shuffledList = List.of(answers);
-    // Mengacak urutan jawaban
-    shuffledList.shuffle();
-    return shuffledList;
+  List<String> getSuffledAnswer() {
+    final shuffledlist = List.of(answers);
+    shuffledlist.shuffle();
+    return shuffledlist;
   }
 }

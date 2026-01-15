@@ -1,10 +1,94 @@
 import 'package:flutter/material.dart';
+import 'package:praktikum_android_7m/services/profile_api_service.dart';
 
-class Profile extends StatelessWidget {
+class Profile extends StatefulWidget {
   const Profile({super.key});
 
   @override
+  State<Profile> createState() {
+    return _ProfileState();
+  }
+}
+
+class _ProfileState extends State<Profile> {
+  dynamic profileData; 
+  bool isLoading = true;
+  String? errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final apiService = ProfileApiService();
+      final profile = await apiService.fetchProfile();
+      setState(() {
+        profileData = profile;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Failed to load profile: $e';
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Colors.white),
+            SizedBox(height: 20),
+            Text('Loading profile...', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+      );
+    }
+
+    if (errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                errorMessage!,
+                style: const TextStyle(color: Colors.white),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _loadProfile,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (profileData == null) {
+      return const Center(
+        child: Text(
+          'No profile data available',
+          style: TextStyle(color: Colors.white),
+        ),
+      );
+    }
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -39,6 +123,8 @@ class Profile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
+
+                  // Header
                   const Text(
                     'Profil Mahasiswa',
                     style: TextStyle(
@@ -48,28 +134,30 @@ class Profile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 30),
+
                   _buildSectionTitle('Data Diri'),
                   const SizedBox(height: 10),
-                  _buildInfoRow('Nama', 'Muhammad Albar'),
-                  _buildInfoRow('Email', '378muhammadalbar@gmail.com'),
-                  _buildInfoRow('NPM', '2210010667'),
+                  _buildInfoRow('Nama', profileData!.nama),
+                  _buildInfoRow('Email', profileData!.email),
+                  _buildInfoRow('NPM', profileData!.npm),
                   _buildInfoRow(
                     'Tempat, Tgl Lahir',
-                    'Kampung Baru, 26 September 2002',
+                    profileData!.tempatTglLahir, 
                   ),
-                  _buildInfoRow('Alamat', 'Sungai Jingah GG Amanah'),
-                  _buildInfoRow('Jenis Kelamin', ' Laki-Laki'),
+                  _buildInfoRow('Alamat', 'Jl. Contoh No. 123, Makassar'), 
+                  _buildInfoRow('Jenis Kelamin', profileData!.jenisKelamin),
                   const SizedBox(height: 30),
+
                   _buildSectionTitle('Riwayat Quiz'),
                   const SizedBox(height: 10),
                   _buildQuizHistoryRow(
                     'Total Submit',
-                    '5 Kali',
+                    '${profileData!.totalSubmit} Kali',
                     Icons.upload_file,
                   ),
                   _buildQuizHistoryRow(
                     'Rata-rata Nilai',
-                    '85.6',
+                    profileData!.rataRataNilai.toString(), 
                     Icons.analytics,
                   ),
                   const SizedBox(height: 20),

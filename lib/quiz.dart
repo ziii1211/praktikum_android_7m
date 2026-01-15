@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:praktikum_android_7m/home_screen.dart';
+import 'package:praktikum_android_7m/models/user_answer.dart'; 
 import 'package:praktikum_android_7m/profile.dart';
 import 'package:praktikum_android_7m/questions_screen.dart';
 import 'package:praktikum_android_7m/result_screen.dart';
 import 'package:praktikum_android_7m/services/question_api_service.dart';
 import 'package:praktikum_android_7m/models/quiz_question.dart';
-import 'package:praktikum_android_7m/models/user_answer.dart'; // Pastikan import ini ada
 
 class Quiz extends StatefulWidget {
   const Quiz({super.key});
@@ -18,48 +18,33 @@ class Quiz extends StatefulWidget {
 
 class _QuizState extends State<Quiz> {
   var activeScreen = 'start-screen';
-  // Ubah menjadi List<UserAnswer> sesuai gambar
   List<UserAnswer> selectedAnswers = []; 
   List<QuizQuestion> questions = [];
   bool isLoading = false;
-  // Tambahkan state untuk proses submit
   bool isSubmitting = false; 
   String? errorMessage;
 
-  // Fungsi chooseAnswer diperbarui untuk menerima id dan string answer
   Future<void> chooseAnswer(int questionId, String answer) async {
-    // Tambahkan jawaban dalam bentuk object UserAnswer
     selectedAnswers.add(UserAnswer(questionId: questionId, answer: answer));
 
     if (selectedAnswers.length == questions.length) {
-      // Jika semua soal sudah dijawab, kirim ke server
       setState(() {
         isSubmitting = true;
       });
 
       try {
         final apiService = QuestionApiService();
-        // Ubah list jawaban menjadi format JSON
         final answersJson = selectedAnswers.map((a) => a.toJson()).toList();
         
-        // Panggil fungsi submit (Pastikan fungsi ini ada di QuestionApiService Anda)
-        // Jika error 'submitAnswers' tidak ditemukan, Anda perlu menambahkannya di service.
-        await apiService.submitAnswers(answersJson); 
-
-        print('Submission successful');
+        final response = await apiService.submitAnswers(answersJson);
         
-        setState(() {
-          activeScreen = 'result-screen';
-        });
+        print('Submission successful: $response');
       } catch (e) {
         print('Failed to submit answers: $e');
         print('Continuing to result screen with local data');
-        // Tetap pindah ke result screen meskipun gagal submit (opsional, sesuai kebutuhan)
-        setState(() {
-          activeScreen = 'result-screen';
-        });
       } finally {
         setState(() {
+          activeScreen = 'result-screen';
           isSubmitting = false;
         });
       }
@@ -94,7 +79,6 @@ class _QuizState extends State<Quiz> {
       selectedAnswers = [];
       isLoading = true;
       errorMessage = null;
-      activeScreen = 'questions-screen'; // Langsung set screen agar tidak flicker
     });
 
     try {
@@ -103,6 +87,7 @@ class _QuizState extends State<Quiz> {
 
       setState(() {
         questions = fetchedQuestions;
+        activeScreen = 'questions-screen';
         isLoading = false;
       });
     } catch (e) {
@@ -122,46 +107,27 @@ class _QuizState extends State<Quiz> {
 
   @override
   Widget build(context) {
-    Widget screenWidget = HomeScreen(
-      startQuiz: switchScreen,
-      profile: profileScreen,
-    );
+    Widget screenWidget;
 
-    // Logika Loading Tampilan Baru (Sesuai Gambar 5)
     if (isLoading || isSubmitting) {
       final loadingText = isSubmitting 
           ? 'Submitting answers...' 
           : 'Loading questions...';
 
-      return MaterialApp(
-        home: Scaffold(
-          body: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.deepPurple, Colors.purple],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+      screenWidget = Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(color: Colors.white),
+            const SizedBox(height: 20),
+            Text(
+              loadingText, 
+              style: const TextStyle(color: Colors.white)
             ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(color: Colors.white),
-                  const SizedBox(height: 20),
-                  Text(
-                    loadingText,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          ],
         ),
       );
-    }
-
-    if (errorMessage != null) {
+    } else if (errorMessage != null) {
       screenWidget = Center(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -186,21 +152,33 @@ class _QuizState extends State<Quiz> {
           ),
         ),
       );
-    } else if (activeScreen == 'questions-screen') {
-      screenWidget = QuestionsScreen(
-        // Pastikan QuestionsScreen Anda sudah diperbarui untuk menerima 
-        // fungsi dengan parameter (int id, String answer)
-        onSelectedAnswer: chooseAnswer,
-        questions: questions,
+    } else {
+      screenWidget = HomeScreen(
+        startQuiz: switchScreen,
+        profile: profileScreen,
       );
-    } else if (activeScreen == 'result-screen') {
-      screenWidget = ResultScreen(
-        chosenAnswers: selectedAnswers,
-        onRestart: restartQuiz,
-        questions: questions,
-      );
-    } else if (activeScreen == 'profile-screen') {
-      screenWidget = const Profile();
+    }
+
+    if (!isLoading && errorMessage == null && !isSubmitting) {
+      if (activeScreen == 'questions-screen') {
+        screenWidget = QuestionsScreen(
+          onSelectedAnswer: chooseAnswer, 
+          questions: questions,
+        );
+      }
+
+      if (activeScreen == 'result-screen') {
+        screenWidget = ResultScreen(
+          // PERBAIKAN: Kirim selectedAnswers langsung (Tipe datanya sudah List<UserAnswer>)
+          chosenAnswers: selectedAnswers, 
+          onRestart: restartQuiz,
+          questions: questions,
+        );
+      }
+
+      if (activeScreen == 'profile-screen') {
+        screenWidget = const Profile();
+      }
     }
 
     return MaterialApp(
@@ -208,7 +186,7 @@ class _QuizState extends State<Quiz> {
         body: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.deepPurple, Colors.purple],
+              colors: [Colors.deepPurple, Colors.deepPurple],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),

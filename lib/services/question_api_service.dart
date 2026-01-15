@@ -3,14 +3,17 @@ import 'package:http/http.dart' as http;
 import '../models/quiz_question.dart';
 
 class QuestionApiService {
-  static const String baseUrl =
+  static const String _baseUrl =
       'https://api-post.banjarmasinkota.xyz/api/questions/random';
-  static const String apiKey = 'API_IvTWJLWVHByuZxzAbyTn9frB1HtPPvOX';
+  // Endpoint untuk submit jawaban
+  static const String submitUrl =
+      'https://api-post.banjarmasinkota.xyz/api/quiz/submit';
+  static const String apiKey = 'API_WrGxV8G4YOurfqOxKYaZNGjo5ILmHM2r';
 
   Future<List<QuizQuestion>> fetchQuestions() async {
     try {
       final response = await http.get(
-        Uri.parse(baseUrl),
+        Uri.parse(_baseUrl),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $apiKey',
@@ -31,16 +34,12 @@ class QuestionApiService {
               if (b['is_correct'] == true) return 1;
               return 0;
             });
-            
             final List<String> options = optionsJson
                 .map((option) => option['option_text'] as String)
                 .toList();
 
-            // PERBAIKAN DISINI:
-            // 1. Ambil ID dari JSON (pastikan key-nya 'id' atau sesuaikan dengan API)
-            // 2. Gunakan Named Parameters (id: ..., text: ..., answers: ...)
             return QuizQuestion(
-              id: questionJson['id'] ?? 0, // Fallback ke 0 jika id null
+              id: questionJson['id'] as int,
               text: questionJson['question_text'] as String,
               answers: options,
             );
@@ -54,6 +53,30 @@ class QuestionApiService {
       }
     } catch (e) {
       throw Exception('Error fetching questions: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> submitAnswers(
+    List<Map<String, dynamic>> answers,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse(submitUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $apiKey',
+        },
+        body: json.encode({'answers': answers}),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return data;
+      } else {
+        throw Exception('Failed to submit answers: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to submit answers: $e');
     }
   }
 }

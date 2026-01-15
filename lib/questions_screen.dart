@@ -10,9 +10,7 @@ class QuestionsScreen extends StatefulWidget {
     required this.questions,
   });
 
-  // Nanti mungkin perlu diubah untuk mengirim ID juga, 
-  // tapi untuk sekarang kita biarkan String dulu agar tidak error.
-  final void Function(String answer) onSelectedAnswer;
+  final void Function(int questionId, String answer) onSelectedAnswer;
   final List<QuizQuestion> questions;
 
   @override
@@ -25,7 +23,11 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
   var currentQuestionIndex = 0;
 
   void answerQuestion(String selectedAnswer) {
-    widget.onSelectedAnswer(selectedAnswer);
+    widget.onSelectedAnswer(
+      widget.questions[currentQuestionIndex].id, 
+      selectedAnswer
+    );
+    
     setState(() {
       currentQuestionIndex++;
     });
@@ -53,10 +55,7 @@ class _QuestionsScreenState extends State<QuestionsScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 30),
-            
-            // PERBAIKAN DISINI: 
-            // Ubah 'getSuffledAnswer' menjadi 'getShuffledAnswers' (Sesuai model)
-            ...currentQuestion.getShuffledAnswers().map(
+            ...currentQuestion.getSuffledAnswer().map(
               (item) {
               return Container(
                 margin: const EdgeInsets.all(5),

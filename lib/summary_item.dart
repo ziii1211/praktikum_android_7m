@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:praktikum_android_7m/question_identifier.dart';
-
 class SummaryItem extends StatelessWidget {
   const SummaryItem(this.itemData, {super.key});
 
